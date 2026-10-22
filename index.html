@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bể cá thông minh – Arduino</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="bg"><div id="rays"></div><div id="bgfish"></div><div id="bubbles"></div></div>
+
+<main id="auth" class="screen">
+  <div class="card auth-card">
+    <h1>Bể cá thông minh</h1>
+    <p class="sub">Thực hành vật lý – Arduino</p>
+    <div class="tabs">
+      <button id="tabLogin" class="active ic i-fish" type="button">Đăng nhập</button>
+      <button id="tabReg" class="ic i-shell" type="button">Đăng ký</button>
+    </div>
+    <div id="authForm">
+      <label>Tên đăng nhập<input id="u" autocomplete="username"></label>
+      <label>Mật khẩu<input id="p" type="password" autocomplete="current-password"></label>
+      <label id="p2wrap" hidden>Nhập lại mật khẩu<input id="p2" type="password"></label>
+      <p id="authMsg" class="msg" role="alert"></p>
+      <button id="authBtn" class="btn ic i-fish" type="button">Đăng nhập</button>
+    </div>
+  </div>
+</main>
+
+<main id="app" class="screen" hidden>
+  <header class="top">
+    <h2>Bể cá của <span id="who"></span></h2>
+    <div class="top-r">
+      <button id="mode" class="chip sel" type="button" title="Bấm để tới phần chỉnh cảm biến">Chế độ mô phỏng ▾</button>
+      <button id="connect" class="btn ghost small ic i-bubble" type="button">Kết nối Arduino</button>
+      <button id="logout" class="btn ghost small ic i-anchor" type="button">Đăng xuất</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section class="tank-wrap">
+      <div class="tank" id="tank">
+        <div class="water" id="water">
+          <div class="turbid" id="turbid"></div>
+          <svg class="wave" viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 20 Q100 0 200 20 T400 20 T600 20 T800 20 T1000 20 T1200 20 V40 H0Z"/></svg>
+          <svg class="wave w2" viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 20 Q100 40 200 20 T400 20 T600 20 T800 20 T1000 20 T1200 20 V40 H0Z"/></svg>
+          <div id="fish"></div>
+          <div id="tbubbles"></div>
+          <div class="plants">
+            <i class="kelp k1"></i><i class="kelp k2"></i><i class="kelp k3"></i>
+            <i class="coral c1"></i><i class="coral c2"></i>
+          </div>
+          <div class="sand"></div>
+        </div>
+        <div class="dark" id="dark"></div>
+        <div class="glass"></div>
+      </div>
+      <div id="alerts" role="alert" aria-live="assertive"></div>
+      <div class="leds">
+        <span><i class="led" id="ledW"></i>Mực nước</span>
+        <span><i class="led" id="ledT"></i>Độ đục</span>
+        <span><i class="led" id="ledP"></i>pH</span>
+      </div>
+    </section>
+
+    <section class="panels">
+      <article class="card" id="cardW">
+        <h3>Mực nước <b class="badge" id="bW"></b></h3>
+        <div class="row"><span>Bể cá</span><div class="bar"><i id="barW1"></i></div><b id="vW1"></b></div>
+        <div class="row"><span>Bình dự trữ</span><div class="bar"><i id="barW2"></i></div><b id="vW2"></b></div>
+        <p class="state">Máy bơm: <b id="pump">TẮT</b></p>
+      </article>
+
+      <article class="card" id="cardT">
+        <h3>Độ đục (phân cá) <b class="badge" id="bT"></b></h3>
+        <div class="row"><span>Bể cá</span><div class="bar"><i id="barT1"></i></div><b id="vT1"></b></div>
+        <div class="row"><span>Bình dự trữ</span><div class="bar"><i id="barT2"></i></div><b id="vT2"></b></div>
+        <p class="state">Máy lọc: <b id="filter">TẮT</b></p>
+      </article>
+
+      <article class="card" id="cardP">
+        <h3>Độ pH <b class="badge" id="bP"></b></h3>
+        <div class="ph"><i id="phPin"></i></div>
+        <p class="state"><b id="vP"></b> <span id="phTxt"></span></p>
+      </article>
+
+      <article class="card">
+        <h3>Đèn bể cá</h3>
+        <button id="lightBtn" class="btn ic i-bulb" type="button">Tắt đèn</button>
+      </article>
+
+      <article class="card" id="sim">
+        <h3>Mô phỏng cảm biến</h3>
+        <label>Nước bể cá <input type="range" id="sW1" min="0" max="100" value="70"></label>
+        <label>Nước bình dự trữ <input type="range" id="sW2" min="0" max="100" value="80"></label>
+        <label>Độ đục bể cá <input type="range" id="sT1" min="0" max="100" value="10"></label>
+        <label>Độ đục bình dự trữ <input type="range" id="sT2" min="0" max="100" value="10"></label>
+        <label>pH <input type="range" id="sP" min="40" max="100" value="72"></label>
+      </article>
+    </section>
+  </div>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
