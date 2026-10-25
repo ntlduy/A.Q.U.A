@@ -4,13 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bể cá thông minh – Arduino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="bg"><div id="rays"></div><div id="bgfish"></div><div id="bubbles"></div></div>
+<div id="bg"><div id="rays"></div><div id="bgfish"></div><div id="bubbles"></div><div id="seabed"></div></div>
+<div id="fx"></div>
 
 <main id="auth" class="screen">
   <div class="card auth-card">
+    <div class="auth-scene" id="authScene" aria-hidden="true"><div id="authFish"></div></div>
     <h1>Bể cá thông minh</h1>
     <p class="sub">Thực hành vật lý – Arduino</p>
     <div class="tabs">
@@ -31,6 +36,7 @@
   <header class="top">
     <h2>Bể cá của <span id="who"></span></h2>
     <div class="top-r">
+      <button id="sound" class="chip snd ic i-speaker" type="button" aria-pressed="true" title="Bật / tắt âm thanh"><span id="soundTxt">Âm thanh: Bật</span></button>
       <button id="mode" class="chip sel" type="button" title="Bấm để tới phần chỉnh cảm biến">Chế độ mô phỏng ▾</button>
       <button id="connect" class="btn ghost small ic i-bubble" type="button">Kết nối Arduino</button>
       <button id="logout" class="btn ghost small ic i-anchor" type="button">Đăng xuất</button>
@@ -40,18 +46,18 @@
   <div class="layout">
     <section class="tank-wrap">
       <div class="tank" id="tank">
+        <div id="decor"></div>
+        <div id="fish"></div>
         <div class="water" id="water">
-          <div class="turbid" id="turbid"></div>
-          <svg class="wave" viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 20 Q100 0 200 20 T400 20 T600 20 T800 20 T1000 20 T1200 20 V40 H0Z"/></svg>
-          <svg class="wave w2" viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 20 Q100 40 200 20 T400 20 T600 20 T800 20 T1000 20 T1200 20 V40 H0Z"/></svg>
-          <div id="fish"></div>
-          <div id="tbubbles"></div>
-          <div class="plants">
-            <i class="kelp k1"></i><i class="kelp k2"></i><i class="kelp k3"></i>
-            <i class="coral c1"></i><i class="coral c2"></i>
-          </div>
-          <div class="sand"></div>
+          <svg class="wave" viewBox="0 0 1200 20" preserveAspectRatio="none"><path d="M0 9Q50 -1 100 9T200 9T300 9T400 9T500 9T600 9T700 9T800 9T900 9T1000 9T1100 9T1200 9V20H0Z"/></svg>
+          <svg class="wave w2" viewBox="0 0 1200 20" preserveAspectRatio="none"><path d="M0 9Q50 19 100 9T200 9T300 9T400 9T500 9T600 9T700 9T800 9T900 9T1000 9T1100 9T1200 9V20H0Z"/></svg>
         </div>
+        <div class="wclip mid"><div id="tbubbles"></div></div>
+        <div class="wclip top"><div class="turbid" id="turbid"></div><div id="specks"></div></div>
+        <div class="cracks"></div>
+        <div class="minline"><span>Mức tối thiểu</span></div>
+        <div class="pipe" aria-hidden="true"><svg viewBox="0 0 58 64"><rect x="12" y="-6" width="34" height="48" rx="4" fill="#a9bdd1" stroke="#1b2a5e" stroke-width="3"/><rect x="6" y="38" width="46" height="16" rx="6" fill="#7f97ad" stroke="#1b2a5e" stroke-width="3"/><path d="M20 0v34" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/></svg></div>
+        <i class="stream"></i>
         <div class="dark" id="dark"></div>
         <div class="glass"></div>
       </div>
@@ -66,21 +72,21 @@
     <section class="panels">
       <article class="card" id="cardW">
         <h3>Mực nước <b class="badge" id="bW"></b></h3>
-        <div class="row"><span>Bể cá</span><div class="bar"><i id="barW1"></i></div><b id="vW1"></b></div>
-        <div class="row"><span>Bình dự trữ</span><div class="bar"><i id="barW2"></i></div><b id="vW2"></b></div>
-        <p class="state">Máy bơm: <b id="pump">TẮT</b></p>
+        <div class="row"><span>Bể cá</span><div class="bar"><i id="barW1"></i><em class="mk" style="left:20%"></em></div><b id="vW1"></b></div>
+        <div class="row"><span>Bình dự trữ</span><div class="bar"><i id="barW2"></i><em class="mk" style="left:20%"></em></div><b id="vW2"></b></div>
+        <p class="state"><span class="medal p"><svg viewBox="0 0 24 24"><g fill="#52cdf5" stroke="#1b2a5e" stroke-width="1.6" stroke-linejoin="round"><path d="M12 12C8.5 8.5 8.5 3.5 12 2c3.5 1.5 3.5 6.5 0 10z"/><path d="M12 12C8.5 8.5 8.5 3.5 12 2c3.5 1.5 3.5 6.5 0 10z" transform="rotate(90 12 12)"/><path d="M12 12C8.5 8.5 8.5 3.5 12 2c3.5 1.5 3.5 6.5 0 10z" transform="rotate(180 12 12)"/><path d="M12 12C8.5 8.5 8.5 3.5 12 2c3.5 1.5 3.5 6.5 0 10z" transform="rotate(270 12 12)"/><circle cx="12" cy="12" r="2.6" fill="#ffae2b"/></g></svg></span>Máy bơm: <b id="pump">TẮT</b></p>
       </article>
 
       <article class="card" id="cardT">
         <h3>Độ đục (phân cá) <b class="badge" id="bT"></b></h3>
-        <div class="row"><span>Bể cá</span><div class="bar"><i id="barT1"></i></div><b id="vT1"></b></div>
-        <div class="row"><span>Bình dự trữ</span><div class="bar"><i id="barT2"></i></div><b id="vT2"></b></div>
-        <p class="state">Máy lọc: <b id="filter">TẮT</b></p>
+        <div class="row"><span>Bể cá</span><div class="bar"><i id="barT1"></i><em class="mk" style="left:60%"></em></div><b id="vT1"></b></div>
+        <p class="note">Chỉ đo ở bể cá chính. Bình dự trữ không đo độ đục.</p>
+        <p class="state"><span class="medal f"><svg viewBox="0 0 24 24"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" fill="#52cdf5" stroke="#1b2a5e" stroke-width="1.8" stroke-linejoin="round"/></svg></span>Máy lọc: <b id="filter">TẮT</b></p>
       </article>
 
       <article class="card" id="cardP">
         <h3>Độ pH <b class="badge" id="bP"></b></h3>
-        <div class="ph"><i id="phPin"></i></div>
+        <div class="ph"><em class="mk" style="left:41.67%"></em><em class="mk" style="left:66.67%"></em><i id="phPin"></i></div>
         <p class="state"><b id="vP"></b> <span id="phTxt"></span></p>
       </article>
 
@@ -94,7 +100,6 @@
         <label>Nước bể cá <input type="range" id="sW1" min="0" max="100" value="70"></label>
         <label>Nước bình dự trữ <input type="range" id="sW2" min="0" max="100" value="80"></label>
         <label>Độ đục bể cá <input type="range" id="sT1" min="0" max="100" value="10"></label>
-        <label>Độ đục bình dự trữ <input type="range" id="sT2" min="0" max="100" value="10"></label>
         <label>pH <input type="range" id="sP" min="40" max="100" value="72"></label>
       </article>
     </section>

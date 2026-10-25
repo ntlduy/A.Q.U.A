@@ -1,12 +1,12 @@
 /*
   BỂ CÁ THÔNG MINH – Arduino UNO
-  Cảm biến:  A0 mực nước bể cá | A1 mực nước bình dự trữ | A2 độ đục bể cá
-             A3 độ đục bình dự trữ | A4 pH (module PH-4502C)
+  Cảm biến:  A0 mực nước bể cá | A1 mực nước bình dự trữ | A2 độ đục bể cá (CHỈ đo bể chính)
+             A4 pH (module PH-4502C)   (A3 không dùng – bình dự trữ không đo độ đục)
   Ngõ ra:    D7 relay bơm | D8 relay đèn hồ | D12 relay máy lọc
              D9 LED cảnh báo nước | D10 LED cảnh báo đục | D11 LED cảnh báo pH
   Relay thường kích mức LOW -> nếu relay của bạn kích mức HIGH, đổi RELAY_ON/RELAY_OFF.
 */
-const int PIN_W1 = A0, PIN_W2 = A1, PIN_T1 = A2, PIN_T2 = A3, PIN_PH = A4;
+const int PIN_W1 = A0, PIN_W2 = A1, PIN_T1 = A2, PIN_PH = A4;
 const int PUMP = 7, LIGHT = 8, FILTER = 12, LED_W = 9, LED_T = 10, LED_PH = 11;
 const int RELAY_ON = LOW, RELAY_OFF = HIGH;
 
@@ -49,7 +49,6 @@ void loop() {
   int w1 = pct(PIN_W1, WATER_EMPTY, WATER_FULL);
   int w2 = pct(PIN_W2, WATER_EMPTY, WATER_FULL);
   int t1 = pct(PIN_T1, TURB_CLEAR, TURB_DIRTY);
-  int t2 = pct(PIN_T2, TURB_CLEAR, TURB_DIRTY);
   float ph = readPH();
 
   // bơm: bể cá thấp mà bình dự trữ còn nước -> bơm; cạn cả hai -> dừng
@@ -57,8 +56,8 @@ void loop() {
   if (w1 >= 60 || w2 < LOW_WATER) pump = false;
   digitalWrite(PUMP, pump ? RELAY_ON : RELAY_OFF);
 
-  // máy lọc: bật khi 1 trong 2 bình đục
-  bool dirty = (t1 > TURB_MAX || t2 > TURB_MAX);
+  // máy lọc: chỉ bật khi nước BỂ CÁ CHÍNH bị đục
+  bool dirty = (t1 > TURB_MAX);
   digitalWrite(FILTER, dirty ? RELAY_ON : RELAY_OFF);
 
   // đèn cảnh báo
@@ -69,7 +68,6 @@ void loop() {
   Serial.print("{\"w1\":"); Serial.print(w1);
   Serial.print(",\"w2\":"); Serial.print(w2);
   Serial.print(",\"t1\":"); Serial.print(t1);
-  Serial.print(",\"t2\":"); Serial.print(t2);
   Serial.print(",\"ph\":"); Serial.print(ph, 1);
   Serial.print(",\"pump\":"); Serial.print(pump);
   Serial.print(",\"filter\":"); Serial.print(dirty);

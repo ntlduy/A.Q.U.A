@@ -20,9 +20,17 @@ Lưu ý: mở bằng http://localhost (không mở file:// trực tiếp) để 
 4. Dữ liệu cảm biến sẽ hiện thật; nút đèn gửi lệnh L1/L0 xuống Arduino.
 
 ## Sơ đồ chân
-A0 mực nước bể | A1 mực nước bình dự trữ | A2 đục bể | A3 đục bình dự trữ | A4 pH
+A0 mực nước bể | A1 mực nước bình dự trữ | A2 đục bể chính (bình dự trữ KHÔNG đo đục) | A4 pH
 D7 relay bơm | D8 relay đèn hồ | D12 relay máy lọc
 D9 LED nước | D10 LED đục | D11 LED pH (mỗi LED nối điện trở 220Ω)
 
 ## Ngưỡng cảnh báo (sửa ở đầu app.js và file .ino)
 Nước thấp < 20% | Đục > 60% | pH < 6.5 hoặc > 8.0
+
+## Giao diện & âm thanh
+- Giao diện hoạt hình dưới biển; cá bơi qua – bơi lại, bọt nước nổi lên, rong biển đung đưa.
+- Bấm nút / bấm vào bể -> gợn sóng + bọt nước nổi lên + tiếng bọt.
+- pH đổi -> màu nước đổi liên tục (vàng xanh -> xanh dương -> tím). Độ đục tăng -> nước ngả nâu, cá mờ dần.
+- Nước bể xuống thấp -> mực nước tụt thật sự; dưới 8% là cạn, cá nằm thoi thóp, đáy nứt.
+- Khi bơm chạy: có vòi nước đổ vào bể và âm thanh bơm. Nút "Âm thanh" ở góc trên để bật/tắt (nhớ lựa chọn).
+- Trình duyệt chỉ cho phát tiếng sau khi bạn bấm vào trang ít nhất một lần.
