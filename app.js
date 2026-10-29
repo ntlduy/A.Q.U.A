@@ -1,6 +1,6 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const LOW = 20, TURB_MAX = 60, PH_MIN = 6.5, PH_MAX = 8.0;
+const LOW = 20, TURB_MAX = 40, PH_MIN = 6.5, PH_MAX = 8.0;
 const NAVY = '#1b2a5e';
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -114,10 +114,81 @@ const Snd = (() => {
     if (on) pop();
     sync();
   }
+  // còi cảnh báo: 6 tiếng bíp cao-thấp (không phụ thuộc nút bật/tắt âm thanh nền)
+  function siren() {
+    if (!unlocked) return false;
+    const c = get(); if (!c) return false;
+    if (c.state === 'suspended') c.resume();
+    const t0 = c.currentTime;
+    for (let i = 0; i < 6; i++) {
+      const o = c.createOscillator(), g = c.createGain(), s = t0 + i * .22;
+      o.type = 'square';
+      o.frequency.value = i % 2 ? 660 : 990;
+      g.gain.setValueAtTime(.0001, s);
+      g.gain.exponentialRampToValueAtTime(.22, s + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, s + .2);
+      o.connect(g); g.connect(c.destination);
+      o.start(s); o.stop(s + .22);
+    }
+    return true;
+  }
   ui();
-  return { unlock, pop, bloop, setPump, toggle };
+  return { unlock, pop, bloop, setPump, toggle, siren, isUnlocked: () => unlocked };
 })();
 $('sound').onclick = () => Snd.toggle();
+
+/* =====================================================================
+   CẢNH BÁO: khi vào web mà đang có cảnh báo (hoặc có cảnh báo mới)
+   -> hiện hộp thông báo + kêu còi + rung + thông báo hệ thống
+   ===================================================================== */
+const Alarm = (() => {
+  const modal = $('alarmModal'), BASE = document.title;
+  let known = new Set(), acked = false, active = [], timer = 0, lastHtml = '';
+
+  function beep() {
+    if (!active.length || acked) return;
+    if (Snd.siren()) { try { navigator.vibrate && navigator.vibrate([250, 120, 250]); } catch (e) {} }
+  }
+  function notify(list) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try { new Notification('⚠ Bể cá có cảnh báo', { body: list.map(a => a[1]).join('\n'), tag: 'aqua-alert' }); } catch (e) {}
+  }
+  function draw() {
+    const html = active.map(a => `<li><span class="t-ico">${a[0]}</span><div><b>${a[1]}</b><p>${a[2]}</p></div></li>`).join('');
+    if (html !== lastHtml) { $('alarmList').innerHTML = html; lastHtml = html; }
+  }
+  function update(alerts) {
+    active = alerts;
+    if (!alerts.length) {                       // hết cảnh báo -> dọn dẹp
+      modal.hidden = true; acked = false; known = new Set(); lastHtml = '';
+      clearInterval(timer); timer = 0; document.title = BASE;
+      return;
+    }
+    const keys = new Set(alerts.map(a => a[4]));
+    const fresh = alerts.filter(a => !known.has(a[4]));
+    known = keys;                                // cảnh báo đã hết rồi quay lại sẽ báo lại
+    document.title = '⚠ CẢNH BÁO – ' + BASE;
+    draw();
+    if (fresh.length) {                          // có cảnh báo mới (hoặc vừa vào web)
+      acked = false; modal.hidden = false;
+      notify(fresh); beep();
+      if (!timer) timer = setInterval(beep, 7000);  // còn cảnh báo thì cứ 7 giây kêu lại
+    }
+  }
+  function ack() { acked = true; modal.hidden = true; }
+  // lần chạm đầu tiên: trình duyệt cho phép phát tiếng -> kêu ngay nếu đang có cảnh báo
+  function kick(target) {
+    if (target && target.closest && target.closest('#alarmModal')) return;
+    beep();
+  }
+  function askPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+      try { Notification.requestPermission(); } catch (e) {}
+    }
+  }
+  $('alarmOk').onclick = ack;
+  return { update, kick, askPermission };
+})();
 
 /* =====================================================================
    HIỆU ỨNG BÓNG NƯỚC KHI BẤM
@@ -150,7 +221,9 @@ function jelly(el) {
 }
 const HIT = 'button,.btn,.chip,input[type=range],.tank';
 document.addEventListener('pointerdown', e => {
+  const first = !Snd.isUnlocked();
   Snd.unlock();
+  if (first) { Alarm.kick(e.target); Alarm.askPermission(); }
   const t = e.target.closest(HIT);
   if (!t) return;
   waterBurst(e.clientX, e.clientY, t.matches('.tank') ? 6 : 8);
@@ -383,13 +456,12 @@ $('logout').onclick = () => { sessionStorage.removeItem('aq_user'); location.rel
    DỮ LIỆU CẢM BIẾN
    (độ đục chỉ đo ở BỂ CÁ CHÍNH – bình dự trữ không có cảm biến đục)
    ===================================================================== */
-const S = { w1: 70, w2: 80, t1: 10, ph: 7.2, pump: false, filter: false, light: true };
+const S = { w1: 70, w2: 80, t1: 10, ph: 7.2, pump: false, light: true };
 let hardware = false, port = null, writer = null;
 
 function logic() { // giống logic trong file .ino
   if (S.w1 < LOW && S.w2 >= LOW) S.pump = true;
   if (S.w1 >= 60 || S.w2 < LOW) S.pump = false;
-  S.filter = S.t1 > TURB_MAX;
 }
 
 /* màu nước đổi liên tục theo pH */
@@ -411,18 +483,19 @@ function phColors(ph) {
 function render() {
   const noWater = S.w1 < LOW && S.w2 < LOW;
   const lowW = S.w1 < LOW || S.w2 < LOW;
-  const dirty = S.t1 > TURB_MAX;
+  const dirty = S.t1 >= TURB_MAX;
   const phHigh = S.ph > PH_MAX, phLow = S.ph < PH_MIN;
   const w1 = Math.round(S.w1), w2 = Math.round(S.w2), t1 = Math.round(S.t1), ph = S.ph.toFixed(1);
   const alerts = [];
-  if (noWater) alerts.push(['⛔', 'Hết nước – đã dừng bơm', `Bể cá còn ${w1}% và bình dự trữ còn ${w2}% (dưới ${LOW}%). Hãy châm thêm nước vào bình dự trữ.`, 0]);
-  else if (S.w1 < LOW) alerts.push(['💧', `Thiếu nước trong bể cá (${w1}%)`, `Mực nước dưới ${LOW}%. Đang bơm bù từ bình dự trữ (còn ${w2}%).`, 0]);
-  else if (S.w2 < LOW) alerts.push(['💧', `Bình dự trữ sắp hết (${w2}%)`, `Dưới ${LOW}%, không còn đủ nước để bơm bù cho bể cá (đang ${w1}%). Hãy châm thêm nước.`, 1]);
-  if (dirty) alerts.push(['🟤', `Nước bể cá bị đục (${t1}%)`, `Vượt ngưỡng ${TURB_MAX}%, có thể do phân cá hoặc thức ăn thừa. Máy lọc đang chạy – nên giảm lượng thức ăn.`, 0]);
-  if (phHigh) alerts.push(['🧪', `pH quá cao (${ph})`, `Vượt ngưỡng ${PH_MAX}: nước quá kiềm, cá dễ bị stress. Nước bể chuyển sang màu tím. Hãy thay một phần nước.`, 0]);
-  if (phLow) alerts.push(['🧪', `pH quá thấp (${ph})`, `Dưới ngưỡng ${PH_MIN}: nước quá axit, hại mang cá. Nước bể chuyển sang màu vàng xanh. Hãy thay một phần nước.`, 0]);
+  if (noWater) alerts.push(['⛔', 'Hết nước – đã dừng bơm', `Bể cá còn ${w1}% và bình dự trữ còn ${w2}% (dưới ${LOW}%). Hãy châm thêm nước vào bình dự trữ.`, 0, 'w-out']);
+  else if (S.w1 < LOW) alerts.push(['💧', `Thiếu nước trong bể cá (${w1}%)`, `Mực nước dưới ${LOW}%. Đang bơm bù từ bình dự trữ (còn ${w2}%).`, 0, 'w-low']);
+  else if (S.w2 < LOW) alerts.push(['💧', `Bình dự trữ sắp hết (${w2}%)`, `Dưới ${LOW}%, không còn đủ nước để bơm bù cho bể cá (đang ${w1}%). Hãy châm thêm nước.`, 1, 'w-res']);
+  if (dirty) alerts.push(['🟤', `Nước bể cá bị đục (${t1}%)`, `Đã đạt ngưỡng ${TURB_MAX}% trở lên, có thể do phân cá hoặc thức ăn thừa. Nên giảm lượng thức ăn và thay một phần nước.`, 0, 'turb']);
+  if (phHigh) alerts.push(['🧪', `pH quá cao (${ph})`, `Vượt ngưỡng ${PH_MAX}: nước quá kiềm, cá dễ bị stress. Nước bể chuyển sang màu tím. Hãy thay một phần nước.`, 0, 'ph-hi']);
+  if (phLow) alerts.push(['🧪', `pH quá thấp (${ph})`, `Dưới ngưỡng ${PH_MIN}: nước quá axit, hại mang cá. Nước bể chuyển sang màu vàng xanh. Hãy thay một phần nước.`, 0, 'ph-lo']);
   const html = alerts.map(a => `<div class="toast${a[3] ? ' warn' : ''}"><span class="t-ico">${a[0]}</span><div><b>${a[1]}</b><p>${a[2]}</p></div></div>`).join('');
   if ($('alerts').dataset.h !== html) { $('alerts').innerHTML = html; $('alerts').dataset.h = html; }
+  Alarm.update(alerts);
 
   // đèn cảnh báo
   $('ledW').classList.toggle('bad', lowW);
@@ -446,11 +519,9 @@ function render() {
   // độ đục (chỉ bể chính)
   bar('barT1', S.t1, S.t1 > TURB_MAX ? 'bad' : 'brown');
   $('vT1').textContent = t1 + '%';
-  $('filter').textContent = S.filter ? 'ĐANG LỌC' : 'TẮT';
-  $('cardT').classList.toggle('run', S.filter);
   badge('bT', dirty, '⚠ Đục', 'Trong');
   $('turbid').style.opacity = Math.min(.85, S.t1 / 100 * .9);
-  $('specks').style.opacity = clamp(S.t1 / 60, 0, 1);
+  $('specks').style.opacity = clamp(S.t1 / TURB_MAX, 0, 1);
 
   // pH + màu nước
   $('vP').textContent = 'pH ' + ph;
@@ -474,7 +545,6 @@ $('sP').oninput = e => { S.ph = e.target.value / 10; render(); };
 setInterval(() => {
   if (hardware) return;
   if (S.pump) { S.w1 = Math.min(100, S.w1 + 3); S.w2 = Math.max(0, S.w2 - 2); }
-  if (S.filter) S.t1 = Math.max(0, S.t1 - 3);
   [['sW1', 'w1'], ['sW2', 'w2'], ['sT1', 't1']].forEach(([i, k]) => $(i).value = S[k]);
   logic(); render();
 }, 1000);
@@ -510,7 +580,7 @@ $('connect').onclick = async () => {
       const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
       try {
         const d = JSON.parse(line);
-        Object.assign(S, { w1: d.w1, w2: d.w2, t1: d.t1, ph: d.ph, pump: !!d.pump, filter: !!d.filter, light: !!d.light });
+        Object.assign(S, { w1: d.w1, w2: d.w2, t1: d.t1, ph: d.ph, pump: !!d.pump, light: !!d.light });
         render();
       } catch (e) { /* bỏ qua dòng lỗi */ }
     }

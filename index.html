@@ -79,9 +79,8 @@
 
       <article class="card" id="cardT">
         <h3>Độ đục (phân cá) <b class="badge" id="bT"></b></h3>
-        <div class="row"><span>Bể cá</span><div class="bar"><i id="barT1"></i><em class="mk" style="left:60%"></em></div><b id="vT1"></b></div>
-        <p class="note">Chỉ đo ở bể cá chính. Bình dự trữ không đo độ đục.</p>
-        <p class="state"><span class="medal f"><svg viewBox="0 0 24 24"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" fill="#52cdf5" stroke="#1b2a5e" stroke-width="1.8" stroke-linejoin="round"/></svg></span>Máy lọc: <b id="filter">TẮT</b></p>
+        <div class="row"><span>Bể cá</span><div class="bar"><i id="barT1"></i><em class="mk" style="left:40%"></em></div><b id="vT1"></b></div>
+        <p class="note">Chỉ đo ở bể cá chính. Bình dự trữ không đo độ đục. Cảnh báo khi độ đục ≥ 40%.</p>
       </article>
 
       <article class="card" id="cardP">
@@ -105,6 +104,13 @@
     </section>
   </div>
 </main>
+<div id="alarmModal" class="modal" role="alertdialog" aria-modal="true" aria-labelledby="alarmTitle" hidden>
+  <div class="modal-box">
+    <h3 id="alarmTitle">⚠ Bể cá có cảnh báo!</h3>
+    <ul id="alarmList"></ul>
+    <button id="alarmOk" class="btn" type="button">Đã hiểu – tắt âm</button>
+  </div>
+</div>
 <script src="app.js"></script>
 </body>
 </html>

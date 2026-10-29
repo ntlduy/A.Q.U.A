@@ -21,11 +21,11 @@ Lưu ý: mở bằng http://localhost (không mở file:// trực tiếp) để 
 
 ## Sơ đồ chân
 A0 mực nước bể | A1 mực nước bình dự trữ | A2 đục bể chính (bình dự trữ KHÔNG đo đục) | A4 pH
-D7 relay bơm | D8 relay đèn hồ | D12 relay máy lọc
+D7 relay bơm | D8 relay đèn hồ
 D9 LED nước | D10 LED đục | D11 LED pH (mỗi LED nối điện trở 220Ω)
 
 ## Ngưỡng cảnh báo (sửa ở đầu app.js và file .ino)
-Nước thấp < 20% | Đục > 60% | pH < 6.5 hoặc > 8.0
+Nước thấp < 20% | Đục ≥ 40% | pH < 6.5 hoặc > 8.0
 
 ## Giao diện & âm thanh
 - Giao diện hoạt hình dưới biển; cá bơi qua – bơi lại, bọt nước nổi lên, rong biển đung đưa.
