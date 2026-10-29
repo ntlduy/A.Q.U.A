@@ -131,7 +131,7 @@ button.chip{border:3px solid var(--navy)}
 .cracks{left:0;right:0;bottom:0;height:13%;z-index:3;pointer-events:none;opacity:0;transition:opacity 1s;
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 30' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%231b2a5e' stroke-opacity='.35' stroke-width='1.3' stroke-linecap='round'%3E%3Cpath d='M10 0l8 9-6 8 9 13M60 0l-6 11 10 7-4 12M110 0l7 8-8 9 6 13M160 0l-7 10 9 8-5 12M35 14l12 4M130 16l14-3M85 12l-10 6'/%3E%3C/g%3E%3C/svg%3E") center/100% 100% no-repeat}
 .dry .cracks{opacity:1}
-.minline{left:0;right:0;bottom:22.8%;height:0;border-top:3px dashed rgba(27,42,94,.55);z-index:8;pointer-events:none}
+.minline{left:0;right:0;bottom:39.6%;height:0;border-top:3px dashed rgba(27,42,94,.55);z-index:8;pointer-events:none}
 .minline span{position:absolute;right:10px;top:-11px;font:800 .7rem var(--ff-h);padding:0 8px;border-radius:99px;background:#fff;border:2px solid var(--navy);color:var(--navy)}
 .pipe{right:9%;top:-4px;width:56px;z-index:9;pointer-events:none}
 .pipe svg{display:block;width:100%}
@@ -176,6 +176,7 @@ button.chip{border:3px solid var(--navy)}
 #alerts:empty{display:none}
 .toast{display:flex;gap:12px;align-items:center;padding:10px 16px 10px 10px;border-radius:22px;background:#ffd9d6;border:3px solid var(--navy);box-shadow:0 4px 0 var(--navy);color:var(--navy);animation:nudge 1.8s ease-in-out infinite}
 .toast.warn{background:#ffefb0}
+.toast.info{background:#d6f1ff;animation:none}
 @keyframes nudge{50%{transform:translateY(-3px)}}
 .t-ico{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:1.5rem;background:#fff;border:3px solid var(--navy)}
 .toast b{display:block;font:800 1.05rem var(--ff-h)}

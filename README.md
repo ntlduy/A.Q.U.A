@@ -25,7 +25,9 @@ D7 relay bơm | D8 relay đèn hồ
 D9 LED nước | D10 LED đục | D11 LED pH (mỗi LED nối điện trở 220Ω)
 
 ## Ngưỡng cảnh báo (sửa ở đầu app.js và file .ino)
-Nước thấp < 20% | Đục ≥ 40% | pH < 6.5 hoặc > 8.0
+Bể cá tối thiểu 40% (dưới 40% -> tự bơm bù từ bình dự trữ đến 60%)
+Bình dự trữ < 40% -> báo động cần châm nước (≤ 5% thì dừng bơm để khỏi chạy khô)
+Đục ≥ 40% | pH < 6.5 hoặc > 8.0
 
 ## Giao diện & âm thanh
 - Giao diện hoạt hình dưới biển; cá bơi qua – bơi lại, bọt nước nổi lên, rong biển đung đưa.

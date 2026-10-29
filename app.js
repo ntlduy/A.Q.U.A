@@ -1,6 +1,8 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const LOW = 20, TURB_MAX = 40, PH_MIN = 6.5, PH_MAX = 8.0;
+const LOW = 20, TURB_MAX = 40, PH_MIN = 6.5, PH_MAX = 8.0;   // LOW: nước quá cạn (cá thoi thóp)
+const TANK_MIN = 40, TANK_TARGET = 60;        // bể cá: tối thiểu 40%, bơm bù đến 60%
+const RES_MIN = 40, RES_START = 10, RES_STOP = 5;   // bình dự trữ: báo khi < 40%, dừng bơm khi <= 5%
 const NAVY = '#1b2a5e';
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -460,8 +462,8 @@ const S = { w1: 70, w2: 80, t1: 10, ph: 7.2, pump: false, light: true };
 let hardware = false, port = null, writer = null;
 
 function logic() { // giống logic trong file .ino
-  if (S.w1 < LOW && S.w2 >= LOW) S.pump = true;
-  if (S.w1 >= 60 || S.w2 < LOW) S.pump = false;
+  if (S.w1 < TANK_MIN && S.w2 >= RES_START) S.pump = true;
+  if (S.w1 >= TANK_TARGET || S.w2 <= RES_STOP) S.pump = false;
 }
 
 /* màu nước đổi liên tục theo pH */
@@ -481,19 +483,25 @@ function phColors(ph) {
 }
 
 function render() {
-  const noWater = S.w1 < LOW && S.w2 < LOW;
-  const lowW = S.w1 < LOW || S.w2 < LOW;
+  const tankLow = S.w1 < TANK_MIN;                       // bể cá dưới mức tối thiểu 40%
+  const resLow = S.w2 < RES_MIN;                         // bình dự trữ dưới 40%
+  const resEmpty = S.w2 <= RES_STOP;                     // bình dự trữ gần cạn -> không bơm được
+  const noWater = tankLow && resEmpty;                   // bể thiếu mà bình dự trữ cũng hết
+  const lowW = resLow || (tankLow && !S.pump);
   const dirty = S.t1 >= TURB_MAX;
   const phHigh = S.ph > PH_MAX, phLow = S.ph < PH_MIN;
   const w1 = Math.round(S.w1), w2 = Math.round(S.w2), t1 = Math.round(S.t1), ph = S.ph.toFixed(1);
-  const alerts = [];
-  if (noWater) alerts.push(['⛔', 'Hết nước – đã dừng bơm', `Bể cá còn ${w1}% và bình dự trữ còn ${w2}% (dưới ${LOW}%). Hãy châm thêm nước vào bình dự trữ.`, 0, 'w-out']);
-  else if (S.w1 < LOW) alerts.push(['💧', `Thiếu nước trong bể cá (${w1}%)`, `Mực nước dưới ${LOW}%. Đang bơm bù từ bình dự trữ (còn ${w2}%).`, 0, 'w-low']);
-  else if (S.w2 < LOW) alerts.push(['💧', `Bình dự trữ sắp hết (${w2}%)`, `Dưới ${LOW}%, không còn đủ nước để bơm bù cho bể cá (đang ${w1}%). Hãy châm thêm nước.`, 1, 'w-res']);
+  const alerts = [];   // cảnh báo -> hiện hộp thông báo + kêu còi
+  const infos = [];    // thông báo thường (không kêu còi)
+  if (noWater) alerts.push(['⛔', 'Hết nước – đã dừng bơm', `Bể cá còn ${w1}% (dưới mức tối thiểu ${TANK_MIN}%) và bình dự trữ chỉ còn ${w2}%. Hãy châm thêm nước vào bình dự trữ ngay.`, 0, 'w-out']);
+  else if (resLow) alerts.push(['💧', `Bình dự trữ sắp hết (${w2}%)`, `Dưới ${RES_MIN}%. Hãy châm thêm nước vào bình dự trữ${tankLow ? ` (bể cá đang ${w1}%, dưới mức tối thiểu ${TANK_MIN}%)` : ` (bể cá hiện ${w1}%)`}.`, 1, 'w-res']);
+  if (tankLow && S.pump) infos.push(['🚰', `Bể cá dưới mức tối thiểu (${w1}%)`, `Đang bơm thêm nước từ bình dự trữ (còn ${w2}%) vào bể cho đến khi đạt ${TANK_TARGET}%.`]);
+  else if (!tankLow && S.pump) infos.push(['🚰', `Đang bơm bù nước (${w1}%)`, `Bơm sẽ tự dừng khi bể cá đạt ${TANK_TARGET}%.`]);
   if (dirty) alerts.push(['🟤', `Nước bể cá bị đục (${t1}%)`, `Đã đạt ngưỡng ${TURB_MAX}% trở lên, có thể do phân cá hoặc thức ăn thừa. Nên giảm lượng thức ăn và thay một phần nước.`, 0, 'turb']);
   if (phHigh) alerts.push(['🧪', `pH quá cao (${ph})`, `Vượt ngưỡng ${PH_MAX}: nước quá kiềm, cá dễ bị stress. Nước bể chuyển sang màu tím. Hãy thay một phần nước.`, 0, 'ph-hi']);
   if (phLow) alerts.push(['🧪', `pH quá thấp (${ph})`, `Dưới ngưỡng ${PH_MIN}: nước quá axit, hại mang cá. Nước bể chuyển sang màu vàng xanh. Hãy thay một phần nước.`, 0, 'ph-lo']);
-  const html = alerts.map(a => `<div class="toast${a[3] ? ' warn' : ''}"><span class="t-ico">${a[0]}</span><div><b>${a[1]}</b><p>${a[2]}</p></div></div>`).join('');
+  const html = alerts.map(a => `<div class="toast${a[3] ? ' warn' : ''}"><span class="t-ico">${a[0]}</span><div><b>${a[1]}</b><p>${a[2]}</p></div></div>`).join('') +
+    infos.map(a => `<div class="toast info"><span class="t-ico">${a[0]}</span><div><b>${a[1]}</b><p>${a[2]}</p></div></div>`).join('');
   if ($('alerts').dataset.h !== html) { $('alerts').innerHTML = html; $('alerts').dataset.h = html; }
   Alarm.update(alerts);
 
@@ -504,9 +512,9 @@ function render() {
 
   // mực nước
   const bar = (id, v, cls) => { $(id).style.width = clamp(v, 0, 100) + '%'; $(id).className = cls || ''; };
-  bar('barW1', S.w1, S.w1 < LOW ? 'bad' : ''); bar('barW2', S.w2, S.w2 < LOW ? 'bad' : '');
+  bar('barW1', S.w1, tankLow ? 'bad' : ''); bar('barW2', S.w2, resLow ? 'bad' : '');
   $('vW1').textContent = w1 + '%'; $('vW2').textContent = w2 + '%';
-  $('pump').textContent = S.pump ? 'ĐANG BƠM' : (noWater ? 'DỪNG (hết nước)' : 'TẮT');
+  $('pump').textContent = S.pump ? 'ĐANG BƠM (bình dự trữ → bể cá)' : (noWater ? 'DỪNG (hết nước)' : 'TẮT');
   badge('bW', lowW, '⚠ Thấp', 'Ổn');
   const tank = $('tank');
   tank.style.setProperty('--lvl', (6 + clamp(S.w1, 0, 100) * .84) + '%');   // nước cạn thật sự khi w1 xuống thấp

@@ -16,7 +16,12 @@ const int TURB_CLEAR = 800, TURB_DIRTY = 300;  // analog khi nước trong / r�
 const float PH_OFFSET = 0.0;                   // chỉnh bằng dung dịch pH 7
 const float PH_SLOPE = 0.18;                   // V trên 1 đơn vị pH (tuỳ module)
 
-const int LOW_WATER = 20, TURB_MAX = 40;   // đục >= 40% là cảnh báo
+const int LOW_WATER = 20, TURB_MAX = 40;   // LOW_WATER: nước quá cạn (dùng cho hiệu ứng) | đục >= 40% là cảnh báo
+const int TANK_MIN = 40;      // mực nước TỐI THIỂU của bể cá: dưới 40% -> bơm thêm từ bình dự trữ
+const int TANK_TARGET = 60;   // bơm đến khi bể cá đạt 60% thì dừng
+const int RES_MIN = 40;       // bình dự trữ dưới 40% -> BÁO ĐỘNG (cần châm thêm nước)
+const int RES_START = 10;     // bình dự trữ phải >= 10% mới cho bơm chạy
+const int RES_STOP = 5;       // bình dự trữ <= 5% -> dừng bơm (tránh bơm chạy khô)
 const float PH_MIN = 6.5, PH_MAX = 8.0;
 bool pump = false, light = true;
 
@@ -51,16 +56,17 @@ void loop() {
   int t1 = pct(PIN_T1, TURB_CLEAR, TURB_DIRTY);
   float ph = readPH();
 
-  // bơm: bể cá thấp mà bình dự trữ còn nước -> bơm; cạn cả hai -> dừng
-  if (w1 < LOW_WATER && w2 >= LOW_WATER) pump = true;
-  if (w1 >= 60 || w2 < LOW_WATER) pump = false;
+  // bơm: bể cá dưới mức tối thiểu (40%) mà bình dự trữ còn nước -> bơm bù đến 60%
+  //      bình dự trữ gần cạn -> dừng bơm
+  if (w1 < TANK_MIN && w2 >= RES_START) pump = true;
+  if (w1 >= TANK_TARGET || w2 <= RES_STOP) pump = false;
   digitalWrite(PUMP, pump ? RELAY_ON : RELAY_OFF);
 
   // nước BỂ CÁ CHÍNH đục: đạt ngưỡng trở lên thì cảnh báo (không còn máy lọc)
   bool dirty = (t1 >= TURB_MAX);
 
-  // đèn cảnh báo
-  digitalWrite(LED_W, (w1 < LOW_WATER || w2 < LOW_WATER));
+  // đèn cảnh báo nước: bình dự trữ < 40%, hoặc bể cá < 40% mà không bơm được
+  digitalWrite(LED_W, (w2 < RES_MIN || (w1 < TANK_MIN && !pump)));
   digitalWrite(LED_T, dirty);
   digitalWrite(LED_PH, (ph < PH_MIN || ph > PH_MAX));
 
